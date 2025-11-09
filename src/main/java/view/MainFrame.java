@@ -28,10 +28,13 @@ public class MainFrame extends JFrame {
         CasterPanel casterPanel = new CasterPanel(currentUser);
         tabbedPane.addTab("Расчет МНЛЗ", casterPanel);
 
+        // Вкладка визуализации алгоритмов
+        AlgorithmVisualizationPanel algorithmPanel = new AlgorithmVisualizationPanel();
+        tabbedPane.addTab("Визуализация алгоритмов", algorithmPanel);
+
         // Вкладка истории и отчетов
-        JPanel reportsPanel = new JPanel();
-        reportsPanel.add(new JLabel("История расчетов и отчеты"));
-        tabbedPane.addTab("Отчеты", reportsPanel);
+        ReportsPanel reportsPanel = new ReportsPanel(currentUser);
+        tabbedPane.addTab("Отчеты и история", reportsPanel);
 
         add(tabbedPane);
 

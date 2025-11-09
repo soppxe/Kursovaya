@@ -28,5 +28,6 @@
             <artifactId>itext7-core</artifactId>
             <version>7.2.5</version>
         </dependency>
+
     </dependencies>
 </project>
