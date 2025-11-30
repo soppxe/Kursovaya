@@ -29,12 +29,12 @@ import java.awt.*;
  * <li>Диалоговое окно регистрации с дополнительными полями</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see JFrame
  * @see AuthService
  * @see MainFrame
- * @since 2024
+ * @since 2025
  */
 public class LoginFrame extends JFrame {
 

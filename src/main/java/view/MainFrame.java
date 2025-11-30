@@ -30,14 +30,14 @@ import javax.swing.*;
  * <li>Справка - информация о программе и разработчике</li>
  * </ul>
  *
- * @author Саитова София Александровна
+ * @author Саитова София
  * @version 1.0
  * @see JFrame
  * @see AlloyingPanel
  * @see CasterPanel
  * @see AlgorithmVisualizationPanel
  * @see ReportsPanel
- * @since 2024
+ * @since 2025
  */
 public class MainFrame extends JFrame {
     /**

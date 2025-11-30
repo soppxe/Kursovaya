@@ -25,12 +25,12 @@ import java.awt.geom.Ellipse2D;
  * <li>Разделитель для регулировки соотношения панелей</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see JPanel
  * @see AlloyingFlowchartPanel
  * @see CasterFlowchartPanel
- * @since 2024
+ * @since 2025
  */
 public class AlgorithmVisualizationPanel extends JPanel {
     /**

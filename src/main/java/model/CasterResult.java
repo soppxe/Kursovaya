@@ -20,9 +20,9 @@ package model;
  * <li>Формирование отчетов и технической документации</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
- * @since 2024
+ * @since 2025
  */
 public class CasterResult {
 

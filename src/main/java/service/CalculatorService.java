@@ -26,11 +26,11 @@ import java.util.Map;
  * <li>Таблица 8.1 - свойства сталей по маркам</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see AlloyingResult
  * @see CasterResult
- * @since 2024
+ * @since 2025
  */
 public class CalculatorService {
 

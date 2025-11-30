@@ -19,9 +19,9 @@ package model;
  * <li>Email используется для восстановления доступа и уведомлений</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
- * @since 2024
+ * @since 2025
  */
 public class User {
 

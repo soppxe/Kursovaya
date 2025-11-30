@@ -29,11 +29,11 @@ import java.util.List;
  * <li>CSV файлы (.csv) - табличные данные для анализа в Excel и других программах</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see AlloyingResult
  * @see CasterResult
- * @since 2024
+ * @since 2025
  */
 public class ReportService {
 

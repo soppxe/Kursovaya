@@ -31,12 +31,12 @@ import javax.swing.*;
  * </ul>
  * </p>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see DatabaseService
  * @see LoginFrame
  * @see SwingUtilities
- * @since 2024
+ * @since 2025
  */
 public class Main {
 

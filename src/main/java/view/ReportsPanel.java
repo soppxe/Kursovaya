@@ -37,13 +37,13 @@ import java.util.List;
  * </ul>
  * </p>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see AlloyingResult
  * @see CasterResult
  * @see DatabaseService
  * @see PDFExportService
- * @since 2024
+ * @since 2025
  */
 public class ReportsPanel extends JPanel {
 

@@ -28,9 +28,9 @@ package model;
  * <p><b>Единицы измерения:</b>
  * Все содержания элементов указаны в процентах по массе (%).
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
- * @since 2024
+ * @since 2025
  */
 public class SteelGrade {
 

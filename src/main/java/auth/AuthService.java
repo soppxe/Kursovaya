@@ -31,12 +31,12 @@ import util.PasswordUtil;
  * <li>Возврат результата аутентификации</li>
  * </ol>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see User
  * @see DatabaseService
  * @see PasswordUtil
- * @since 2024
+ * @since 2025
  */
 public class AuthService {
 

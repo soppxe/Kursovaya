@@ -38,13 +38,13 @@ import java.util.Map;
  * <li>Алюминий (Al) - раскисление первичным алюминием</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see JPanel
  * @see AlloyingResult
  * @see CalculatorService
  * @see DatabaseService
- * @since 2024
+ * @since 2025
  */
 public class AlloyingPanel extends JPanel {
     /**

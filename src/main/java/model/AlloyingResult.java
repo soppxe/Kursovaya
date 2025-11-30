@@ -26,11 +26,11 @@ import java.util.Map;
  * <li>Количество углеродной добавки</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see HashMap
  * @see Map
- * @since 2024
+ * @since 2025
  */
 public class AlloyingResult {
 

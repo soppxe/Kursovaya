@@ -35,13 +35,13 @@ import java.util.List;
  * <li>Рекомендации по типу МНЛЗ на основе радиуса</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see JPanel
  * @see CasterResult
  * @see CalculatorService
  * @see DatabaseService
- * @since 2024
+ * @since 2025
  */
 public class CasterPanel extends JPanel {
     /**

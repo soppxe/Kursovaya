@@ -32,11 +32,11 @@ import java.util.Map;
  * <li>Форматированные числовые значения</li>
  * </ul>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
  * @see AlloyingResult
  * @see CasterResult
- * @since 2024
+ * @since 2025
  */
 public class PDFExportService {
 

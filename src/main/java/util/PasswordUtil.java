@@ -36,9 +36,9 @@ package util;
  * }
  * </pre>
  *
- * @author Ваше имя
+ * @author Саитова София
  * @version 1.0
- * @since 2024
+ * @since 2025
  */
 public class PasswordUtil {
 
