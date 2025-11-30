@@ -12,9 +12,55 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Панель для расчета раскисления и легирования стали в приложении "Калькулятор металлурга".
+ * Предоставляет пользовательский интерфейс для ввода данных, выполнения расчетов и управления результатами.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Ввод исходных данных для расчета (масса стали, химические составы)</li>
+ * <li>Выбор марки стали из справочника с автоматической загрузкой целевых составов</li>
+ * <li>Выполнение расчета раскисления и легирования по формулам раздела 7</li>
+ * <li>Отображение результатов расчета в структурированном виде</li>
+ * <li>Сохранение результатов в базу данных</li>
+ * <li>Экспорт результатов в текстовые отчеты</li>
+ * <li>Просмотр математических формул расчета</li>
+ * </ul>
+ *
+ * <p><b>Поддерживаемые химические элементы:</b>
+ * <ul>
+ * <li>Углерод (C) - корректировка науглероживателем</li>
+ * <li>Марганец (Mn) - легирование ферромарганцем</li>
+ * <li>Кремний (Si) - легирование ферросилицием</li>
+ * <li>Хром (Cr) - легирование феррохромом</li>
+ * <li>Никель (Ni) - легирование техническим никелем</li>
+ * <li>Молибден (Mo) - легирование ферромолибденом</li>
+ * <li>Алюминий (Al) - раскисление первичным алюминием</li>
+ * </ul>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see JPanel
+ * @see AlloyingResult
+ * @see CalculatorService
+ * @see DatabaseService
+ * @since 2024
+ */
 public class AlloyingPanel extends JPanel {
+    /**
+     * Поле для ввода массы жидкой стали в килограммах.
+     */
     private JTextField weightField;
+
+    /**
+     * Выпадающий список для выбора марки стали из справочника.
+     */
     private JComboBox<String> steelGradeCombo;
+
+    /**
+     * Поля для ввода начального и целевого содержания химических элементов.
+     * Формат: [элемент]InitField - начальное содержание, [элемент]TargetField - целевое содержание.
+     */
     private JTextField carbonInitField, carbonTargetField;
     private JTextField mnInitField, mnTargetField;
     private JTextField siInitField, siTargetField;
@@ -22,11 +68,32 @@ public class AlloyingPanel extends JPanel {
     private JTextField niInitField, niTargetField;
     private JTextField moInitField, moTargetField;
     private JTextField alTargetField;
+
+    /**
+     * Область для отображения результатов расчета.
+     */
     private JTextArea resultArea;
+
+    /**
+     * Сервис для выполнения расчетов раскисления и легирования.
+     */
     private CalculatorService calculator;
+
+    /**
+     * Имя текущего пользователя для идентификации при сохранении результатов.
+     */
     private String currentUser;
+
+    /**
+     * Последний результат расчета для повторного использования при сохранении и экспорте.
+     */
     private AlloyingResult lastResult;
 
+    /**
+     * Конструктор панели расчета раскисления.
+     *
+     * @param username имя пользователя для идентификации при сохранении результатов
+     */
     public AlloyingPanel(String username) {
         this.currentUser = username;
         this.calculator = new CalculatorService();
@@ -34,6 +101,10 @@ public class AlloyingPanel extends JPanel {
         loadSteelGrades();
     }
 
+    /**
+     * Инициализирует пользовательский интерфейс панели.
+     * Создает и размещает все компоненты: панель ввода, область результатов и панель кнопок.
+     */
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
 
@@ -58,6 +129,11 @@ public class AlloyingPanel extends JPanel {
         steelGradeCombo.addActionListener(e -> loadSteelGradeData());
     }
 
+    /**
+     * Создает панель ввода данных с полями для массы стали и химических составов.
+     *
+     * @return JPanel с организованными полями ввода в табличном формате
+     */
     private JPanel createInputPanel() {
         JPanel panel = new JPanel(new GridLayout(0, 4, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Исходные данные для расчета раскисления и легирования"));
@@ -140,6 +216,11 @@ public class AlloyingPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Создает панель с кнопками управления для выполнения операций с расчетами.
+     *
+     * @return JPanel с кнопками: Расчет, Сохранение, Экспорт, Очистка, Формулы
+     */
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout());
 
@@ -166,6 +247,10 @@ public class AlloyingPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Загружает список марок стали из базы данных в выпадающий список.
+     * Первым элементом добавляется пункт "-- Выберите марку --" для указания выбора.
+     */
     private void loadSteelGrades() {
         List<SteelGrade> grades = DatabaseService.getAllSteelGrades();
         steelGradeCombo.removeAllItems();
@@ -176,6 +261,10 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Загружает химический состав выбранной марки стали в поля целевых значений.
+     * Автоматически заполняет поля целевого содержания элементов при выборе марки стали.
+     */
     private void loadSteelGradeData() {
         String selectedGrade = (String) steelGradeCombo.getSelectedItem();
         if (selectedGrade != null && !selectedGrade.equals("-- Выберите марку --")) {
@@ -194,10 +283,22 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Форматирует числовое значение для отображения с точкой в качестве разделителя.
+     *
+     * @param value числовое значение для форматирования
+     * @return строковое представление числа с точкой в качестве десятичного разделителя
+     */
     private String formatWithDot(double value) {
         return String.format("%.2f", value).replace(',', '.');
     }
 
+    /**
+     * Обновляет начальные значения содержания элементов на основе выбранной марки стали.
+     * Для элементов с нулевым содержанием в марке стали устанавливает начальное значение 0.0.
+     *
+     * @param steelGrade выбранная марка стали
+     */
     private void updateInitialValuesForGrade(String steelGrade) {
         SteelGrade grade = DatabaseService.findSteelGradeByName(steelGrade);
         if (grade != null) {
@@ -213,6 +314,23 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Выполняет расчет раскисления и легирования стали на основе введенных данных.
+     * Включает валидацию входных данных, выполнение расчета и отображение результатов.
+     *
+     * <p><b>Процесс расчета:</b>
+     * <ol>
+     * <li>Проверка выбора марки стали</li>
+     * <li>Валидация массы стали</li>
+     * <li>Парсинг химических составов</li>
+     * <li>Проверка корректности составов</li>
+     * <li>Выполнение расчета через CalculatorService</li>
+     * <li>Отображение результатов</li>
+     * </ol>
+     *
+     * @throws NumberFormatException если введены некорректные числовые значения
+     * @throws IllegalArgumentException если данные не проходят валидацию
+     */
     private void calculate() {
         try {
             String steelGrade = (String) steelGradeCombo.getSelectedItem();
@@ -272,6 +390,14 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Парсит числовое значение из текстового поля с обработкой ошибок.
+     *
+     * @param field текстовое поле для парсинга
+     * @param fieldName название поля для сообщений об ошибках
+     * @return числовое значение из поля
+     * @throws NumberFormatException если поле пустое или содержит некорректное значение
+     */
     private double parseDoubleField(JTextField field, String fieldName) {
         String text = field.getText().trim();
         if (text.isEmpty()) {
@@ -285,6 +411,13 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Проверяет корректность химических составов перед расчетом.
+     *
+     * @param initial начальный химический состав
+     * @param target целевой химический состав
+     * @return true если составы корректны, false в противном случае
+     */
     private boolean validateCompositions(Map<String, Double> initial, Map<String, Double> target) {
         for (String element : target.keySet()) {
             double initialVal = initial.getOrDefault(element, 0.0);
@@ -308,6 +441,12 @@ public class AlloyingPanel extends JPanel {
         return true;
     }
 
+    /**
+     * Отображает результаты расчета в текстовой области.
+     * Форматирует вывод с разделами: исходные данные, необходимые материалы, итоговый состав.
+     *
+     * @param result объект с результатами расчета для отображения
+     */
     private void displayResults(AlloyingResult result) {
         StringBuilder sb = new StringBuilder();
         sb.append("РЕЗУЛЬТАТЫ РАСЧЕТА РАСКИСЛЕНИЯ И ЛЕГИРОВАНИЯ\n");
@@ -351,6 +490,10 @@ public class AlloyingPanel extends JPanel {
         resultArea.setText(sb.toString());
     }
 
+    /**
+     * Сохраняет последний результат расчета в базу данных.
+     * Требует предварительного выполнения расчета.
+     */
     private void saveToDatabase() {
         if (lastResult == null) {
             JOptionPane.showMessageDialog(this,
@@ -371,6 +514,10 @@ public class AlloyingPanel extends JPanel {
         }
     }
 
+    /**
+     * Экспортирует последний результат расчета в текстовый файл формата PDF-like.
+     * Требует предварительного выполнения расчета.
+     */
     private void exportToPDF() {
         if (lastResult == null) {
             JOptionPane.showMessageDialog(this,
@@ -383,6 +530,10 @@ public class AlloyingPanel extends JPanel {
         PDFExportService.exportAlloyingToPDF(lastResult, currentUser);
     }
 
+    /**
+     * Очищает поля ввода и результаты предыдущего расчета.
+     * Сбрасывает форму к начальному состоянию с сохранением значений по умолчанию.
+     */
     private void clearResults() {
         resultArea.setText("");
         weightField.setText("100000");
@@ -395,6 +546,10 @@ public class AlloyingPanel extends JPanel {
         steelGradeCombo.setSelectedIndex(0);
     }
 
+    /**
+     * Отображает диалоговое окно с математическими формулами расчета раскисления.
+     * Содержит основную формулу 7.1, коэффициенты угара и состав материалов.
+     */
     private void showFormulas() {
         String formulas = """
             ФОРМУЛЫ РАСЧЕТА РАСКИСЛЕНИЯ И ЛЕГИРОВАНИЯ

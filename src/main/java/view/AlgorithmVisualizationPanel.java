@@ -3,15 +3,54 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.RoundRectangle2D;
 
+/**
+ * Панель для визуализации алгоритмов расчетов в приложении "Калькулятор металлурга".
+ * Предоставляет графическое представление алгоритмов раскисления стали и расчета параметров МНЛЗ
+ * в виде блок-схем с подробными описаниями формул и процессов.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Визуализация алгоритма раскисления и легирования стали по разделу 7 учебного пособия</li>
+ * <li>Визуализация алгоритма расчета параметров машины непрерывного литья заготовок (МНЛЗ) по разделу 8</li>
+ * <li>Интерактивное переключение между алгоритмами через вкладки</li>
+ * <li>Детальное описание математических формул и коэффициентов</li>
+ * <li>Графическое представление логических ветвлений и циклов алгоритмов</li>
+ * </ul>
+ *
+ * <p><b>Структура визуализации:</b>
+ * <ul>
+ * <li>Левая панель - текстовое описание алгоритма с формулами</li>
+ * <li>Правая панель - графическая блок-схема алгоритма</li>
+ * <li>Разделитель для регулировки соотношения панелей</li>
+ * </ul>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see JPanel
+ * @see AlloyingFlowchartPanel
+ * @see CasterFlowchartPanel
+ * @since 2024
+ */
 public class AlgorithmVisualizationPanel extends JPanel {
+    /**
+     * Контейнер с вкладками для переключения между алгоритмами.
+     * Содержит две вкладки: алгоритм раскисления и алгоритм расчета МНЛЗ.
+     */
     private JTabbedPane tabbedPane;
 
+    /**
+     * Конструктор по умолчанию.
+     * Инициализирует пользовательский интерфейс панели визуализации алгоритмов.
+     */
     public AlgorithmVisualizationPanel() {
         initializeUI();
     }
 
+    /**
+     * Инициализирует пользовательский интерфейс панели.
+     * Создает вкладки с алгоритмами и настраивает компоновку компонентов.
+     */
     private void initializeUI() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -29,6 +68,11 @@ public class AlgorithmVisualizationPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
     }
 
+    /**
+     * Создает панель для визуализации алгоритма раскисления и легирования стали.
+     *
+     * @return JPanel с разделенными областями описания и блок-схемы алгоритма
+     */
     private JPanel createAlloyingAlgorithmPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -62,6 +106,11 @@ public class AlgorithmVisualizationPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Создает панель для визуализации алгоритма расчета параметров МНЛЗ.
+     *
+     * @return JPanel с разделенными областями описания и блок-схемы алгоритма
+     */
     private JPanel createCasterAlgorithmPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -102,17 +151,65 @@ public class AlgorithmVisualizationPanel extends JPanel {
     }
 }
 
+/**
+ * Панель для отрисовки блок-схемы алгоритма раскисления и легирования стали.
+ * Визуализирует последовательность шагов расчета согласно разделу 7 учебного пособия.
+ *
+ * <p><b>Элементы блок-схемы:</b>
+ * <ul>
+ * <li>Терминаторы (эллипсы) - начало и конец алгоритма</li>
+ * <li>Процессы (прямоугольники) - вычислительные операции</li>
+ * <li>Решение (ромбы) - логические ветвления</li>
+ * <li>Ввод/вывод (параллелограммы) - операции ввода и вывода данных</li>
+ * <li>Стрелки - направление выполнения алгоритма</li>
+ * </ul>
+ *
+ * <p><b>Основные этапы алгоритма:</b>
+ * <ol>
+ * <li>Ввод исходных данных</li>
+ * <li>Проверка корректности данных</li>
+ * <li>Циклический расчет для каждого химического элемента</li>
+ * <li>Расчет масс ферросплавов при необходимости</li>
+ * <li>Учет вносимых примесей</li>
+ * <li>Корректировка углерода</li>
+ * <li>Вывод результатов</li>
+ * </ol>
+ */
 class AlloyingFlowchartPanel extends JPanel {
+    /**
+     * Ширина блока элементов блок-схемы в пикселях.
+     */
     private static final int BLOCK_WIDTH = 280;
+
+    /**
+     * Высота блока элементов блок-схемы в пикселях.
+     */
     private static final int BLOCK_HEIGHT = 50;
+
+    /**
+     * Вертикальное расстояние между блоками в пикселях.
+     */
     private static final int VERTICAL_SPACING = 80;
+
+    /**
+     * Горизонтальное расстояние между параллельными ветвями в пикселях.
+     */
     private static final int HORIZONTAL_SPACING = 80;
 
+    /**
+     * Конструктор панели блок-схемы раскисления.
+     * Устанавливает предпочтительный размер для корректного отображения схемы.
+     */
     public AlloyingFlowchartPanel() {
         setPreferredSize(new Dimension(1000, 1000));
         setBackground(Color.WHITE);
     }
 
+    /**
+     * Отрисовывает блок-схему алгоритма раскисления стали.
+     *
+     * @param g объект Graphics для отрисовки
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -226,7 +323,19 @@ class AlloyingFlowchartPanel extends JPanel {
         drawTerminator(g2d, centerX, currentY, "Конец расчета");
     }
 
-    // НОВЫЙ МЕТОД ТОЛЬКО ДЛЯ ЦИКЛА - рисует стрелки без лишних треугольников
+    /**
+     * Рисует соединительные стрелки для циклической части алгоритма.
+     * Обеспечивает правильное соединение ветвей "ДА" и "НЕТ" из блока проверки прироста элемента.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param centerX центральная координата X основного потока
+     * @param decisionCenterX центральная координата X блока принятия решений
+     * @param deltaDecisionY координата Y блока проверки прироста
+     * @param deltaDiamondBottomY нижняя координата Y ромба проверки прироста
+     * @param yesX координата X ветки "ДА"
+     * @param noX координата X ветки "НЕТ"
+     * @return координата Y для размещения следующего блока алгоритма
+     */
     private int drawCycleArrows(Graphics2D g2d, int centerX, int decisionCenterX,
                                 int deltaDecisionY, int deltaDiamondBottomY, int yesX, int noX) {
         int arrowSize = 8;
@@ -257,6 +366,14 @@ class AlloyingFlowchartPanel extends JPanel {
         return impuritiesY;
     }
 
+    /**
+     * Рисует терминатор (начало/конец алгоритма) в виде эллипса.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param x координата X левого верхнего угла
+     * @param y координата Y левого верхнего угла
+     * @param text текст для отображения внутри терминатора
+     */
     private void drawTerminator(Graphics2D g2d, int x, int y, String text) {
         Ellipse2D ellipse = new Ellipse2D.Double(x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
         g2d.setColor(new Color(200, 255, 200));
@@ -266,6 +383,14 @@ class AlloyingFlowchartPanel extends JPanel {
         drawCenteredString(g2d, text, x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
     }
 
+    /**
+     * Рисует блок процесса (вычислительная операция) в виде прямоугольника.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param x координата X левого верхнего угла
+     * @param y координата Y левого верхнего угла
+     * @param text текст для отображения внутри блока
+     */
     private void drawProcess(Graphics2D g2d, int x, int y, String text) {
         Rectangle rect = new Rectangle(x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
         g2d.setColor(new Color(200, 230, 255));
@@ -275,6 +400,14 @@ class AlloyingFlowchartPanel extends JPanel {
         drawCenteredString(g2d, text, x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
     }
 
+    /**
+     * Рисует блок принятия решения (логическое ветвление) в виде ромба.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param x координата X левого верхнего угла
+     * @param y координата Y левого верхнего угла
+     * @param text текст для отображения внутри ромба
+     */
     private void drawDecision(Graphics2D g2d, int x, int y, String text) {
         int centerX = x + BLOCK_WIDTH/2;
         int centerY = y + BLOCK_HEIGHT/2;
@@ -292,6 +425,14 @@ class AlloyingFlowchartPanel extends JPanel {
         drawCenteredString(g2d, text, x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
     }
 
+    /**
+     * Рисует блок ввода/вывода данных в виде параллелограмма.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param x координата X левого верхнего угла
+     * @param y координата Y левого верхнего угла
+     * @param text текст для отображения внутри блока
+     */
     private void drawInputOutput(Graphics2D g2d, int x, int y, String text) {
         int offset = 20;
         Polygon parallelogram = new Polygon();
@@ -307,6 +448,14 @@ class AlloyingFlowchartPanel extends JPanel {
         drawCenteredString(g2d, text, x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
     }
 
+    /**
+     * Рисует вертикальную стрелку между блоками.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param x координата X центра стрелки
+     * @param fromY координата Y начала стрелки
+     * @param toY координата Y конца стрелки
+     */
     private void drawVerticalArrow(Graphics2D g2d, int x, int fromY, int toY) {
         g2d.setColor(Color.BLACK);
         g2d.drawLine(x, fromY, x, toY);
@@ -318,6 +467,15 @@ class AlloyingFlowchartPanel extends JPanel {
         }
     }
 
+    /**
+     * Рисует горизонтальную стрелку между блоками.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param fromX координата X начала стрелки
+     * @param y координата Y начала стрелки
+     * @param toX координата X конца стрелки
+     * @param toY координата Y конца стрелки
+     */
     private void drawHorizontalArrow(Graphics2D g2d, int fromX, int y, int toX, int toY) {
         g2d.setColor(Color.BLACK);
         g2d.drawLine(fromX, y, toX, toY);
@@ -332,6 +490,17 @@ class AlloyingFlowchartPanel extends JPanel {
         }
     }
 
+    /**
+     * Рисует центрированный текст внутри блока блок-схемы.
+     * Поддерживает многострочный текст с автоматическим переносом строк.
+     *
+     * @param g2d объект Graphics2D для отрисовки
+     * @param text текст для отображения
+     * @param x координата X блока
+     * @param y координата Y блока
+     * @param width ширина блока
+     * @param height высота блока
+     */
     private void drawCenteredString(Graphics2D g2d, String text, int x, int y, int width, int height) {
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
         FontMetrics fm = g2d.getFontMetrics();
@@ -344,17 +513,57 @@ class AlloyingFlowchartPanel extends JPanel {
     }
 }
 
+/**
+ * Панель для отрисовки блок-схемы алгоритма расчета параметров машины непрерывного литья заготовок (МНЛЗ).
+ * Визуализирует последовательность шагов расчета согласно разделу 8 учебного пособия.
+ *
+ * <p><b>Основные этапы алгоритма:</b>
+ * <ol>
+ * <li>Ввод исходных параметров разливки</li>
+ * <li>Расчет числа ручьев МНЛЗ</li>
+ * <li>Определение коэффициента затвердевания по типу заготовки</li>
+ * <li>Расчет металлургической длины</li>
+ * <li>Расчет радиуса МНЛЗ</li>
+ * <li>Проверка минимального радиуса</li>
+ * <li>Определение высоты машины</li>
+ * <li>Вывод расчетных параметров</li>
+ * </ol>
+ */
 class CasterFlowchartPanel extends JPanel {
+    /**
+     * Ширина блока элементов блок-схемы в пикселях.
+     */
     private static final int BLOCK_WIDTH = 300;
+
+    /**
+     * Высота блока элементов блок-схемы в пикселях.
+     */
     private static final int BLOCK_HEIGHT = 50;
+
+    /**
+     * Вертикальное расстояние между блоками в пикселях.
+     */
     private static final int VERTICAL_SPACING = 80;
+
+    /**
+     * Горизонтальное расстояние между параллельными ветвями в пикселях.
+     */
     private static final int HORIZONTAL_SPACING = 80;
 
+    /**
+     * Конструктор панели блок-схемы расчета МНЛЗ.
+     * Устанавливает предпочтительный размер для корректного отображения схемы.
+     */
     public CasterFlowchartPanel() {
         setPreferredSize(new Dimension(1000, 800));
         setBackground(Color.WHITE);
     }
 
+    /**
+     * Отрисовывает блок-схему алгоритма расчета параметров МНЛЗ.
+     *
+     * @param g объект Graphics для отрисовки
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -452,7 +661,7 @@ class CasterFlowchartPanel extends JPanel {
         g2d.setColor(Color.BLACK);
     }
 
-    // Остальные методы без изменений...
+    // Остальные методы аналогичны AlloyingFlowchartPanel...
     private void drawTerminator(Graphics2D g2d, int x, int y, String text) {
         Ellipse2D ellipse = new Ellipse2D.Double(x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
         g2d.setColor(new Color(200, 255, 200));

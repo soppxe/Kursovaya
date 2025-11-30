@@ -14,21 +14,98 @@ import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
+/**
+ * Панель для просмотра истории расчетов и управления отчетами.
+ * Предоставляет интерфейс для работы с сохраненными расчетами раскисления стали и параметров МНЛЗ.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Просмотр истории расчетов с фильтрацией и поиском</li>
+ * <li>Экспорт отчетов в PDF формат</li>
+ * <li>Управление сохраненными расчетами (просмотр, удаление)</li>
+ * <li>Статистика по выполненным расчетам</li>
+ * <li>Пакетный экспорт данных</li>
+ * </ul>
+ * </p>
+ *
+ * <p><b>Компоненты интерфейса:</b>
+ * <ul>
+ * <li>Таблица с историей расчетов</li>
+ * <li>Панель фильтров и поиска</li>
+ * <li>Панель операций с отчетами</li>
+ * <li>Статусная строка</li>
+ * </ul>
+ * </p>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see AlloyingResult
+ * @see CasterResult
+ * @see DatabaseService
+ * @see PDFExportService
+ * @since 2024
+ */
 public class ReportsPanel extends JPanel {
+
+    /**
+     * Имя текущего пользователя для фильтрации данных.
+     */
     private String currentUser;
+
+    /**
+     * Таблица для отображения истории расчетов.
+     */
     private JTable historyTable;
+
+    /**
+     * Модель данных для таблицы истории расчетов.
+     */
     private DefaultTableModel tableModel;
+
+    /**
+     * Сортировщик строк таблицы для реализации фильтрации.
+     */
     private TableRowSorter<DefaultTableModel> sorter;
+
+    /**
+     * Комбобокс для выбора типа расчета при фильтрации.
+     */
     private JComboBox<String> filterTypeCombo;
+
+    /**
+     * Поле для текстового поиска в истории расчетов.
+     */
     private JTextField searchField;
+
+    /**
+     * Метка для отображения статусных сообщений.
+     */
     private JLabel statusLabel;
 
+    /**
+     * Конструктор панели отчетов.
+     * Инициализирует интерфейс и загружает историю расчетов для указанного пользователя.
+     *
+     * @param username имя пользователя для загрузки соответствующих данных
+     * @throws IllegalArgumentException если имя пользователя null или пустое
+     */
     public ReportsPanel(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Имя пользователя не может быть пустым");
+        }
         this.currentUser = username;
         initializeUI();
         loadHistory();
     }
 
+    /**
+     * Инициализирует пользовательский интерфейс панели отчетов.
+     * Создает и размещает все компоненты интерфейса.
+     *
+     * @see #createControlPanel()
+     * @see #createTablePanel()
+     * @see #createOperationsPanel()
+     */
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
 
@@ -55,6 +132,14 @@ public class ReportsPanel extends JPanel {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
+    /**
+     * Создает панель управления с элементами фильтрации и поиска.
+     *
+     * @return панель с элементами управления фильтрацией
+     * @see #applyFilters()
+     * @see #clearFilters()
+     * @see #quickExportSelected()
+     */
     private JPanel createControlPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panel.setBorder(BorderFactory.createTitledBorder("Фильтры и поиск"));
@@ -82,17 +167,38 @@ public class ReportsPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Создает панель с таблицей для отображения истории расчетов.
+     * Настраивает модель данных, сортировку и обработку событий.
+     *
+     * @return панель с таблицей истории расчетов
+     * @see DefaultTableModel
+     * @see TableRowSorter
+     */
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Сохраненные расчеты"));
 
         String[] columns = {"ID", "Тип расчета", "Марка стали", "Основные параметры", "Дата", "Пользователь"};
         tableModel = new DefaultTableModel(columns, 0) {
+            /**
+             * Возвращает класс данных для указанного столбца.
+             *
+             * @param columnIndex индекс столбца
+             * @return класс данных столбца
+             */
             @Override
             public Class<?> getColumnClass(int columnIndex) {
                 return columnIndex == 0 ? Integer.class : String.class;
             }
 
+            /**
+             * Определяет, является ли ячейка редактируемой.
+             *
+             * @param row индекс строки
+             * @param column индекс столбца
+             * @return false - все ячейки нередактируемые
+             */
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // Запрещаем редактирование
@@ -114,6 +220,11 @@ public class ReportsPanel extends JPanel {
 
         // Двойной клик для быстрого экспорта
         historyTable.addMouseListener(new MouseAdapter() {
+            /**
+             * Обрабатывает двойной клик по строке таблицы для быстрого экспорта.
+             *
+             * @param e событие мыши
+             */
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     quickExportSelected();
@@ -128,6 +239,17 @@ public class ReportsPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Создает панель с кнопками операций над отчетами.
+     *
+     * @return панель с кнопками операций
+     * @see #loadHistory()
+     * @see #showDetails()
+     * @see #exportToPDF()
+     * @see #deleteSelected()
+     * @see #showStatistics()
+     * @see #exportAllToCSV()
+     */
     private JPanel createOperationsPanel() {
         JPanel panel = new JPanel(new FlowLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Операции с отчетами"));
@@ -164,11 +286,25 @@ public class ReportsPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Загружает историю расчетов из базы данных.
+     * Использует SwingWorker для асинхронной загрузки данных без блокировки интерфейса.
+     *
+     * @see DatabaseService#getAlloyingHistory(String)
+     * @see DatabaseService#getCasterHistory(String)
+     * @see SwingWorker
+     */
     private void loadHistory() {
         tableModel.setRowCount(0);
         statusLabel.setText("Загрузка данных...");
 
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            /**
+             * Выполняет загрузку данных в фоновом потоке.
+             *
+             * @return null
+             * @throws Exception если произошла ошибка при загрузке данных
+             */
             @Override
             protected Void doInBackground() throws Exception {
                 List<AlloyingResult> alloyingResults = DatabaseService.getAlloyingHistory(currentUser);
@@ -204,6 +340,10 @@ public class ReportsPanel extends JPanel {
                 return null;
             }
 
+            /**
+             * Выполняется после завершения загрузки данных.
+             * Обновляет статусную строку и показывает информационное сообщение если данных нет.
+             */
             @Override
             protected void done() {
                 statusLabel.setText(String.format("Загружено записей: %d", tableModel.getRowCount()));
@@ -217,6 +357,13 @@ public class ReportsPanel extends JPanel {
         worker.execute();
     }
 
+    /**
+     * Применяет фильтры к таблице на основе выбранных критериев.
+     * Комбинирует фильтр по типу расчета и текстовый поиск.
+     *
+     * @see RowFilter
+     * @see TableRowSorter#setRowFilter(RowFilter)
+     */
     private void applyFilters() {
         String selectedType = (String) filterTypeCombo.getSelectedItem();
         String searchText = searchField.getText().trim().toLowerCase();
@@ -245,6 +392,9 @@ public class ReportsPanel extends JPanel {
         statusLabel.setText("Фильтр применен");
     }
 
+    /**
+     * Сбрасывает все примененные фильтры и поисковые критерии.
+     */
     private void clearFilters() {
         filterTypeCombo.setSelectedIndex(0);
         searchField.setText("");
@@ -252,6 +402,13 @@ public class ReportsPanel extends JPanel {
         statusLabel.setText("Фильтры сброшены");
     }
 
+    /**
+     * Выполняет быстрый экспорт выделенной в таблице записи.
+     * Определяет тип расчета и вызывает соответствующий метод экспорта.
+     *
+     * @see #exportAlloyingToPDF(int)
+     * @see #exportCasterToPDF(int)
+     */
     private void quickExportSelected() {
         int selectedRow = historyTable.getSelectedRow();
         if (selectedRow >= 0) {
@@ -263,6 +420,11 @@ public class ReportsPanel extends JPanel {
             statusLabel.setText("Экспорт отчета: " + steelGrade);
 
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                /**
+                 * Выполняет экспорт в фоновом потоке.
+                 *
+                 * @return null
+                 */
                 @Override
                 protected Void doInBackground() throws Exception {
                     if ("Раскисление".equals(reportType)) {
@@ -273,6 +435,9 @@ public class ReportsPanel extends JPanel {
                     return null;
                 }
 
+                /**
+                 * Обновляет статус после завершения экспорта.
+                 */
                 @Override
                 protected void done() {
                     statusLabel.setText("Экспорт завершен: " + steelGrade);
@@ -286,6 +451,13 @@ public class ReportsPanel extends JPanel {
         }
     }
 
+    /**
+     * Показывает детальную информацию о выделенном расчете.
+     * Определяет тип расчета и вызывает соответствующий метод отображения деталей.
+     *
+     * @see #showAlloyingDetails(int)
+     * @see #showCasterDetails(int)
+     */
     private void showDetails() {
         int selectedRow = historyTable.getSelectedRow();
         if (selectedRow >= 0) {
@@ -306,6 +478,13 @@ public class ReportsPanel extends JPanel {
         }
     }
 
+    /**
+     * Показывает детальную информацию о расчете раскисления стали.
+     *
+     * @param resultId идентификатор расчета раскисления
+     * @see AlloyingResult
+     * @see DatabaseService#getAlloyingHistory(String)
+     */
     private void showAlloyingDetails(int resultId) {
         List<AlloyingResult> results = DatabaseService.getAlloyingHistory(currentUser);
         for (AlloyingResult result : results) {
@@ -341,6 +520,13 @@ public class ReportsPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Запись не найдена!", "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Показывает детальную информацию о расчете параметров МНЛЗ.
+     *
+     * @param resultId идентификатор расчета МНЛЗ
+     * @see CasterResult
+     * @see DatabaseService#getCasterHistory(String)
+     */
     private void showCasterDetails(int resultId) {
         List<CasterResult> results = DatabaseService.getCasterHistory(currentUser);
         for (CasterResult result : results) {
@@ -366,10 +552,20 @@ public class ReportsPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Запись не найдена!", "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Выполняет экспорт выделенного отчета в PDF формат.
+     * Является псевдонимом для метода {@link #quickExportSelected()}.
+     */
     private void exportToPDF() {
         quickExportSelected(); // Используем ту же логику
     }
 
+    /**
+     * Экспортирует расчет раскисления в PDF формат.
+     *
+     * @param resultId идентификатор расчета раскисления
+     * @see PDFExportService#exportAlloyingToPDF(AlloyingResult, String)
+     */
     private void exportAlloyingToPDF(int resultId) {
         List<AlloyingResult> results = DatabaseService.getAlloyingHistory(currentUser);
         for (AlloyingResult result : results) {
@@ -381,6 +577,12 @@ public class ReportsPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Запись не найдена!", "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Экспортирует расчет МНЛЗ в PDF формат.
+     *
+     * @param resultId идентификатор расчета МНЛЗ
+     * @see PDFExportService#exportCasterToPDF(CasterResult, String)
+     */
     private void exportCasterToPDF(int resultId) {
         List<CasterResult> results = DatabaseService.getCasterHistory(currentUser);
         for (CasterResult result : results) {
@@ -392,6 +594,13 @@ public class ReportsPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Запись не найдена!", "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Удаляет выделенный расчет из базы данных.
+     * Запрашивает подтверждение перед выполнением операции.
+     *
+     * @see DatabaseService#deleteAlloyingResult(int)
+     * @see DatabaseService#deleteCasterResult(int)
+     */
     private void deleteSelected() {
         int selectedRow = historyTable.getSelectedRow();
         if (selectedRow >= 0) {
@@ -428,6 +637,10 @@ public class ReportsPanel extends JPanel {
         }
     }
 
+    /**
+     * Показывает статистику по выполненным расчетам.
+     * Отображает общее количество расчетов и распределение по типам.
+     */
     private void showStatistics() {
         List<AlloyingResult> alloyingHistory = DatabaseService.getAlloyingHistory(currentUser);
         List<CasterResult> casterHistory = DatabaseService.getCasterHistory(currentUser);
@@ -448,6 +661,10 @@ public class ReportsPanel extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Выполняет экспорт всех данных в CSV формат.
+     * Открывает диалог выбора файла для сохранения.
+     */
     private void exportAllToCSV() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Экспорт всех данных в CSV");
@@ -469,6 +686,12 @@ public class ReportsPanel extends JPanel {
         }
     }
 
+    /**
+     * Вычисляет общую массу добавленных материалов для расчета раскисления.
+     *
+     * @param result объект результата расчета раскисления
+     * @return общая масса добавленных материалов в килограммах
+     */
     private double getTotalMaterials(AlloyingResult result) {
         double total = 0;
         for (Double value : result.getAddedMaterials().values()) {

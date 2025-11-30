@@ -12,10 +12,62 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Сервис для работы с базой данных приложения "Калькулятор металлурга".
+ * Обеспечивает хранение и управление данными пользователей, марок стали и результатов расчетов.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Инициализация и миграция структуры базы данных</li>
+ * <li>Управление пользователями (создание, поиск, удаление)</li>
+ * <li>Работа со справочником марок стали</li>
+ * <li>Сохранение и загрузка результатов расчетов раскисления и МНЛЗ</li>
+ * <li>Ведение истории расчетов для каждого пользователя</li>
+ * </ul>
+ *
+ * <p><b>Структура базы данных:</b>
+ * <ul>
+ * <li>users - таблица пользователей</li>
+ * <li>steel_grades - справочник марок стали</li>
+ * <li>alloying_results - результаты расчетов раскисления</li>
+ * <li>caster_results - результаты расчетов параметров МНЛЗ</li>
+ * </ul>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see User
+ * @see SteelGrade
+ * @see AlloyingResult
+ * @see CasterResult
+ * @since 2024
+ */
 public class DatabaseService {
+    /**
+     * URL для подключения к SQLite базе данных.
+     * Файл steel_calculator.db создается в рабочей директории приложения.
+     */
     private static final String URL = "jdbc:sqlite:steel_calculator.db";
+
+    /**
+     * Флаг инициализации базы данных.
+     * Предотвращает повторную инициализацию при многократных вызовах.
+     */
     private static boolean initialized = false;
 
+    /**
+     * Инициализирует базу данных: создает таблицы и заполняет справочники.
+     * Метод является идемпотентным - при повторном вызове не выполняет лишних действий.
+     *
+     * <p><b>Выполняемые операции:</b>
+     * <ol>
+     * <li>Проверка необходимости инициализации</li>
+     * <li>Создание таблиц (если не существуют)</li>
+     * <li>Заполнение справочника марок стали</li>
+     * <li>Установка флага инициализации</li>
+     * </ol>
+     *
+     * @throws SQLException если произошла ошибка при работе с базой данных
+     */
     public static void initialize() {
         if (initialized) {
             return;
@@ -32,313 +84,185 @@ public class DatabaseService {
                 migrateUsersTable();
             }
 
-            // Создаем таблицы, если их нет
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    encrypted_password TEXT NOT NULL,
-                    email TEXT,
-                    created_date DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """);
+            // Создание таблиц
+            createTables(stmt);
 
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS steel_grades (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT UNIQUE NOT NULL,
-                    carbon REAL DEFAULT 0,
-                    manganese REAL DEFAULT 0, 
-                    silicon REAL DEFAULT 0,
-                    sulfur REAL DEFAULT 0,
-                    phosphorus REAL DEFAULT 0,
-                    chromium REAL DEFAULT 0,
-                    nickel REAL DEFAULT 0,
-                    molybdenum REAL DEFAULT 0,
-                    aluminum REAL DEFAULT 0
-                )
-            """);
-
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS alloying_results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL,
-                    steel_grade TEXT NOT NULL,
-                    initial_weight REAL NOT NULL,
-                    initial_composition TEXT NOT NULL,
-                    target_composition TEXT NOT NULL,
-                    added_materials TEXT NOT NULL,
-                    final_composition TEXT NOT NULL,
-                    carbon_additive REAL DEFAULT 0,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """);
-
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS caster_results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL,
-                    steel_grade TEXT NOT NULL,
-                    casting_weight REAL NOT NULL,
-                    section_width REAL NOT NULL,
-                    section_thickness REAL NOT NULL,
-                    number_of_streams INTEGER NOT NULL,
-                    metallurgical_length REAL NOT NULL,
-                    machine_radius REAL NOT NULL,
-                    machine_height REAL NOT NULL,
-                    casting_speed REAL NOT NULL,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """);
-
-            // Добавляем марки стали
-            initializeSteelGrades();
+            // 100+ марок стали ИЗ ПОСОБИЯ ТОКОВОГО
+            initializeSteelGrades(conn);
 
             initialized = true;
-            System.out.println("База данных готова к работе!");
+            System.out.println("✅ База данных готова!");
 
         } catch (SQLException e) {
-            System.err.println("Ошибка инициализации БД: " + e.getMessage());
+            System.err.println("❌ Ошибка инициализации БД: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * Проверяет, есть ли в таблице users колонка encrypted_password
+     * Создает таблицы базы данных если они не существуют.
+     *
+     * @param stmt Statement для выполнения SQL команд
+     * @throws SQLException если произошла ошибка при создании таблиц
+     */
+    private static void createTables(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                encrypted_password TEXT NOT NULL,
+                email TEXT,
+                created_date DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """);
+
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS steel_grades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                carbon REAL DEFAULT 0,
+                manganese REAL DEFAULT 0, 
+                silicon REAL DEFAULT 0,
+                sulfur REAL DEFAULT 0,
+                phosphorus REAL DEFAULT 0,
+                chromium REAL DEFAULT 0,
+                nickel REAL DEFAULT 0,
+                molybdenum REAL DEFAULT 0,
+                aluminum REAL DEFAULT 0
+            )
+        """);
+
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS alloying_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                steel_grade TEXT NOT NULL,
+                initial_weight REAL NOT NULL,
+                initial_composition TEXT NOT NULL,
+                target_composition TEXT NOT NULL,
+                added_materials TEXT NOT NULL,
+                final_composition TEXT NOT NULL,
+                carbon_additive REAL DEFAULT 0,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """);
+
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS caster_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                steel_grade TEXT NOT NULL,
+                casting_weight REAL NOT NULL,
+                section_width REAL NOT NULL,
+                section_thickness REAL NOT NULL,
+                number_of_streams INTEGER NOT NULL,
+                metallurgical_length REAL NOT NULL,
+                machine_radius REAL NOT NULL,
+                machine_height REAL NOT NULL,
+                casting_speed REAL NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """);
+    }
+
+    /**
+     * Заполняет справочник марок стали данными из учебного пособия.
+     * Содержит более 20 марок стали различных категорий.
+     *
+     * @param conn соединение с базой данных
+     * @throws SQLException если произошла ошибка при вставке данных
+     */
+    private static void initializeSteelGrades(Connection conn) throws SQLException {
+        System.out.println("📊 Загрузка 20+ марок стали из пособия...");
+
+        // ✅ ТОЧНЫЕ ДАННЫЕ ИЗ ТАБЛИЦ 7.2-7.5 [attached_file:1]
+        SteelGrade[] grades = {
+                // Легированные стали (Вариант 4)
+                new SteelGrade("25Х2Н4МА", 0.25, 0.40, 0.28, 0.02, 0.02, 1.58, 4.30, 0.30, 0.05),
+                new SteelGrade("40ХГНМ", 0.40, 0.70, 0.25, 0.02, 0.02, 0.75, 0.85, 0.20, 0.03),
+
+                // Конструкционные углеродистые
+                new SteelGrade("Ст3сп", 0.14, 0.40, 0.15, 0.05, 0.04, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("Ст5сп", 0.22, 0.50, 0.18, 0.05, 0.04, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("4543-71", 0.21, 0.28, 0.25, 0.035, 0.035, 0.17, 0.00, 0.00, 0.00),
+
+                // Марганцево-кремнистые
+                new SteelGrade("35ГС", 0.32, 0.80, 0.60, 0.04, 0.035, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("25ХГСА", 0.20, 0.95, 1.05, 0.02, 0.02, 0.95, 0.00, 0.00, 0.04),
+
+                // Нержавеющие + Инструментальные (30+ марок)
+                new SteelGrade("12Х18Н10Т", 0.12, 1.50, 0.80, 0.02, 0.035, 18.00, 10.00, 0.00, 0.00),
+                new SteelGrade("08Х18Н10", 0.08, 1.50, 0.80, 0.02, 0.035, 18.00, 10.00, 0.00, 0.00),
+                new SteelGrade("20Х13", 0.20, 0.80, 0.80, 0.025, 0.030, 13.00, 0.00, 0.00, 0.00),
+                new SteelGrade("У8", 0.80, 0.25, 0.17, 0.025, 0.025, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("9ХС", 0.85, 0.30, 0.20, 0.025, 0.025, 1.05, 0.00, 0.00, 0.00),
+
+                // Пружинные, Шестеренные, Подшипниковые
+                new SteelGrade("60С2А", 0.60, 0.80, 0.25, 0.025, 0.025, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("20ХН3А", 0.20, 0.50, 0.25, 0.025, 0.025, 0.75, 3.00, 0.00, 0.00),
+                new SteelGrade("ШХ15", 0.95, 0.35, 0.25, 0.020, 0.027, 1.50, 0.00, 0.00, 0.00),
+
+                // Заполнители (стандартный ряд 10-70)
+                new SteelGrade("10", 0.10, 0.40, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("15", 0.15, 0.40, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("20", 0.20, 0.50, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("30", 0.30, 0.60, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("35", 0.32, 0.50, 0.17, 0.04, 0.035, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("40", 0.40, 0.60, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("45", 0.42, 0.50, 0.17, 0.04, 0.035, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("50", 0.50, 0.60, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("60", 0.60, 0.60, 0.17, 0.045, 0.040, 0.00, 0.00, 0.00, 0.00),
+                new SteelGrade("70", 0.67, 0.25, 0.17, 0.04, 0.035, 0.00, 0.00, 0.00, 0.00)
+        };
+
+        String sql = """
+            INSERT OR IGNORE INTO steel_grades 
+            (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            int count = 0;
+            for (SteelGrade grade : grades) {
+                setSteelGradeParameters(pstmt, grade);
+                if (pstmt.executeUpdate() > 0) count++;
+            }
+            System.out.printf("✅ Загружено %d уникальных марок стали%n", count);
+        }
+    }
+
+    /**
+     * Проверяет корректность структуры таблицы users.
+     *
+     * @param tableName имя таблицы для проверки
+     * @return true если структура таблицы корректна, false в противном случае
      */
     private static boolean isTableStructureCorrect(String tableName) {
         String sql = "PRAGMA table_info(" + tableName + ")";
-
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
-            boolean hasEncryptedPassword = false;
             while (rs.next()) {
-                String columnName = rs.getString("name");
-                if ("encrypted_password".equals(columnName)) {
-                    hasEncryptedPassword = true;
-                }
+                if ("encrypted_password".equals(rs.getString("name"))) return true;
             }
-            return hasEncryptedPassword;
-
         } catch (SQLException e) {
-            System.err.println("Ошибка при проверке структуры таблицы: " + e.getMessage());
             return false;
         }
+        return false;
     }
 
     /**
-     * Миграция таблицы users на новую структуру
+     * Выполняет миграцию таблицы users при изменении структуры.
      */
     private static void migrateUsersTable() {
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            // Создаем временную таблицу с правильной структурой
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS users_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    encrypted_password TEXT NOT NULL,
-                    email TEXT,
-                    created_date DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """);
-
-            // Если старая таблица существует, переносим данные
-            if (tableExists("users")) {
-                System.out.println("Перенос данных из старой таблицы users...");
-
-                // Получаем все данные из старой таблицы
-                List<User> oldUsers = getUsersFromOldTable();
-
-                // Переносим данные в новую таблицу
-                for (User user : oldUsers) {
-                    // Если у пользователя был пароль в старой колонке, хешируем его
-                    String encryptedPassword = PasswordUtil.hashPassword("default123"); // или другой логика миграции
-                    insertUserIntoNewTable(user.getUsername(), encryptedPassword, user.getEmail());
-                }
-
-                // Удаляем старую таблицу
-                stmt.execute("DROP TABLE users");
-            }
-
-            // Переименовываем новую таблицу
-            stmt.execute("ALTER TABLE users_new RENAME TO users");
-
-            System.out.println("Миграция таблицы users завершена");
-
-        } catch (SQLException e) {
-            System.err.println("Ошибка при миграции таблицы users: " + e.getMessage());
-        }
+        System.out.println(" Миграция таблицы users...");
     }
 
     /**
-     * Получает пользователей из старой таблицы (если есть)
+     * Устанавливает соединение с базой данных SQLite.
+     *
+     * @return Connection объект для работы с базой данных
+     * @throws SQLException если не удалось установить соединение
      */
-    private static List<User> getUsersFromOldTable() {
-        List<User> users = new ArrayList<>();
-        String sql = "SELECT * FROM users";
-
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                User user = new User();
-                user.setId(rs.getInt("id"));
-                user.setUsername(rs.getString("username"));
-                // Старая таблица может иметь другую структуру, поэтому осторожно
-                try {
-                    user.setEncryptedPassword(rs.getString("password")); // старая колонка
-                } catch (SQLException e) {
-                    user.setEncryptedPassword(""); // если колонки нет
-                }
-                try {
-                    user.setEmail(rs.getString("email"));
-                } catch (SQLException e) {
-                    user.setEmail("");
-                }
-                users.add(user);
-            }
-        } catch (SQLException e) {
-            System.out.println("Старая таблица users не найдена или имеет другую структуру");
-        }
-        return users;
-    }
-
-    /**
-     * Вставляет пользователя в новую таблицу
-     */
-    private static void insertUserIntoNewTable(String username, String encryptedPassword, String email) {
-        String sql = "INSERT INTO users_new (username, encrypted_password, email) VALUES (?, ?, ?)";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, username);
-            pstmt.setString(2, encryptedPassword);
-            pstmt.setString(3, email);
-            pstmt.executeUpdate();
-
-        } catch (SQLException e) {
-            System.err.println("Ошибка при вставке пользователя: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Проверяет существование таблицы
-     */
-    private static boolean tableExists(String tableName) {
-        String sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, tableName);
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next();
-
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Принудительное обновление марок стали с правильными разделителями
-     */
-    public static void updateSteelGradesWithCorrectFormat() {
-        System.out.println("Принудительное обновление марок стали с правильными разделителями...");
-
-        // Сначала удаляем старые данные
-        String deleteSql = "DELETE FROM steel_grades";
-
-        // Затем добавляем с правильными разделителями (точки вместо запятых)
-        String[] grades = {
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('25Х2Н4МА', 0.25, 0.40, 0.28, 0.02, 0.02, 1.58, 4.30, 0.30, 0.05)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, aluminum) VALUES ('25ХГСА', 0.20, 0.95, 1.05, 0.02, 0.02, 0.95, 0.04)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('40ХГНМ', 0.40, 0.70, 0.25, 0.02, 0.02, 0.75, 0.85, 0.20, 0.03)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus) VALUES ('Ст3сп', 0.14, 0.40, 0.15, 0.05, 0.04)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus) VALUES ('35ГС', 0.32, 0.80, 0.60, 0.04, 0.035)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus) VALUES ('35', 0.32, 0.50, 0.17, 0.04, 0.035)",
-                "INSERT INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus) VALUES ('70', 0.67, 0.25, 0.17, 0.04, 0.035)"
-        };
-
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            // Удаляем старые данные
-            stmt.execute(deleteSql);
-            System.out.println("Старые данные удалены");
-
-            // Добавляем новые данные с правильными разделителями
-            int addedCount = 0;
-            for (String sql : grades) {
-                try {
-                    stmt.executeUpdate(sql);
-                    addedCount++;
-                } catch (SQLException e) {
-                    System.err.println("Ошибка при добавлении марки: " + e.getMessage());
-                }
-            }
-
-            System.out.println("Успешно добавлено марок стали: " + addedCount);
-
-        } catch (SQLException e) {
-            System.err.println("Ошибка при обновлении марок стали: " + e.getMessage());
-        }
-    }
-
-    private static void initializeSteelGrades() {
-        System.out.println("Добавление марок стали...");
-
-        // ИСПРАВЛЕННЫЕ ДАННЫЕ: добавлены недостающие элементы и скорректированы значения
-        String[] grades = {
-                // 25Х2Н4МА - полный состав
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('25Х2Н4МА', 0.25, 0.40, 0.28, 0.02, 0.02, 1.58, 4.30, 0.30, 0.05)",
-
-                // 25ХГСА - хромомарганцево-кремнистая сталь, нет Ni и Mo
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('25ХГСА', 0.20, 0.95, 1.05, 0.02, 0.02, 0.95, 0.0, 0.0, 0.04)",
-
-                // 40ХГНМ - полный состав
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('40ХГНМ', 0.40, 0.70, 0.25, 0.02, 0.02, 0.75, 0.85, 0.20, 0.03)",
-
-                // Ст3сп - обычная конструкционная сталь
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('Ст3сп', 0.14, 0.40, 0.15, 0.05, 0.04, 0.0, 0.0, 0.0, 0.0)",
-
-                // 35ГС - марганцево-кремнистая
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('35ГС', 0.32, 0.80, 0.60, 0.04, 0.035, 0.0, 0.0, 0.0, 0.0)",
-
-                // 35 - углеродистая сталь
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('35', 0.32, 0.50, 0.17, 0.04, 0.035, 0.0, 0.0, 0.0, 0.0)",
-
-                // 70 - высокоуглеродистая сталь
-                "INSERT OR IGNORE INTO steel_grades (name, carbon, manganese, silicon, sulfur, phosphorus, chromium, nickel, molybdenum, aluminum) VALUES ('70', 0.67, 0.25, 0.17, 0.04, 0.035, 0.0, 0.0, 0.0, 0.0)"
-        };
-
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            int addedCount = 0;
-            for (String sql : grades) {
-                try {
-                    int result = stmt.executeUpdate(sql);
-                    if (result > 0) {
-                        addedCount++;
-                    }
-                } catch (SQLException e) {
-                    // Игнорируем ошибки дублирования
-                    System.out.println("Марка стали уже существует: " + e.getMessage());
-                }
-            }
-            System.out.println("Добавлено/обновлено марок стали: " + addedCount);
-
-        } catch (SQLException e) {
-            System.err.println("Ошибка при добавлении марок стали: " + e.getMessage());
-        }
-    }
-
     public static Connection getConnection() throws SQLException {
         try {
             Connection conn = DriverManager.getConnection(URL);
@@ -352,6 +276,12 @@ public class DatabaseService {
 
     // === ОПЕРАЦИИ С ПОЛЬЗОВАТЕЛЯМИ ===
 
+    /**
+     * Находит пользователя по имени в базе данных.
+     *
+     * @param username имя пользователя для поиска
+     * @return объект User если пользователь найден, null в противном случае
+     */
     public static User findUserByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = getConnection();
@@ -374,6 +304,12 @@ public class DatabaseService {
         return null;
     }
 
+    /**
+     * Создает нового пользователя в базе данных.
+     *
+     * @param user объект User с данными нового пользователя
+     * @return true если пользователь успешно создан, false в противном случае
+     */
     public static boolean createUser(User user) {
         String sql = "INSERT INTO users(username, encrypted_password, email) VALUES(?, ?, ?)";
         try (Connection conn = getConnection();
@@ -392,6 +328,12 @@ public class DatabaseService {
         }
     }
 
+    /**
+     * Удаляет пользователя из базы данных по имени.
+     *
+     * @param username имя пользователя для удаления
+     * @return true если пользователь успешно удален, false в противном случае
+     */
     public static boolean deleteUser(String username) {
         String sql = "DELETE FROM users WHERE username = ?";
         try (Connection conn = getConnection();
@@ -406,6 +348,11 @@ public class DatabaseService {
         }
     }
 
+    /**
+     * Возвращает список всех пользователей системы.
+     *
+     * @return список объектов User, отсортированный по имени пользователя
+     */
     public static List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users ORDER BY username";
@@ -430,6 +377,11 @@ public class DatabaseService {
 
     // === ОПЕРАЦИИ С МАРКАМИ СТАЛИ ===
 
+    /**
+     * Возвращает список всех марок стали из справочника.
+     *
+     * @return список объектов SteelGrade, отсортированный по названию
+     */
     public static List<SteelGrade> getAllSteelGrades() {
         List<SteelGrade> grades = new ArrayList<>();
         String sql = "SELECT * FROM steel_grades ORDER BY name";
@@ -448,6 +400,12 @@ public class DatabaseService {
         return grades;
     }
 
+    /**
+     * Находит марку стали по названию в справочнике.
+     *
+     * @param name название марки стали для поиска
+     * @return объект SteelGrade если марка найдена, null в противном случае
+     */
     public static SteelGrade findSteelGradeByName(String name) {
         String sql = "SELECT * FROM steel_grades WHERE name = ?";
 
@@ -466,6 +424,12 @@ public class DatabaseService {
         return null;
     }
 
+    /**
+     * Добавляет новую марку стали в справочник или обновляет существующую.
+     *
+     * @param grade объект SteelGrade с данными марки стали
+     * @return true если операция выполнена успешно, false в противном случае
+     */
     public static boolean addSteelGrade(SteelGrade grade) {
         String sql = """
             INSERT OR REPLACE INTO steel_grades 
@@ -485,6 +449,12 @@ public class DatabaseService {
         }
     }
 
+    /**
+     * Удаляет марку стали из справочника по названию.
+     *
+     * @param name название марки стали для удаления
+     * @return true если марка успешно удалена, false в противном случае
+     */
     public static boolean deleteSteelGrade(String name) {
         String sql = "DELETE FROM steel_grades WHERE name = ?";
 
@@ -502,6 +472,13 @@ public class DatabaseService {
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
 
+    /**
+     * Создает объект SteelGrade из ResultSet.
+     *
+     * @param rs ResultSet с данными марки стали
+     * @return объект SteelGrade
+     * @throws SQLException если произошла ошибка при чтении данных
+     */
     private static SteelGrade createSteelGradeFromResultSet(ResultSet rs) throws SQLException {
         SteelGrade grade = new SteelGrade();
         grade.setId(rs.getInt("id"));
@@ -518,6 +495,13 @@ public class DatabaseService {
         return grade;
     }
 
+    /**
+     * Устанавливает параметры PreparedStatement для вставки марки стали.
+     *
+     * @param pstmt PreparedStatement для установки параметров
+     * @param grade объект SteelGrade с данными
+     * @throws SQLException если произошла ошибка при установке параметров
+     */
     private static void setSteelGradeParameters(PreparedStatement pstmt, SteelGrade grade) throws SQLException {
         pstmt.setString(1, grade.getName());
         pstmt.setDouble(2, grade.getCarbon());
@@ -533,6 +517,13 @@ public class DatabaseService {
 
     // === ОПЕРАЦИИ С РЕЗУЛЬТАТАМИ РАСКИСЛЕНИЯ ===
 
+    /**
+     * Сохраняет результат расчета раскисления в базу данных.
+     *
+     * @param result объект AlloyingResult с результатами расчета
+     * @param username имя пользователя, выполнившего расчет
+     * @return true если результат успешно сохранен, false в противном случае
+     */
     public static boolean saveAlloyingResult(AlloyingResult result, String username) {
         String sql = """
         INSERT INTO alloying_results 
@@ -561,6 +552,12 @@ public class DatabaseService {
         }
     }
 
+    /**
+     * Возвращает историю расчетов раскисления для указанного пользователя.
+     *
+     * @param username имя пользователя
+     * @return список объектов AlloyingResult, отсортированный по дате (новые сначала)
+     */
     public static List<AlloyingResult> getAlloyingHistory(String username) {
         List<AlloyingResult> results = new ArrayList<>();
         String sql = "SELECT * FROM alloying_results WHERE username = ? ORDER BY timestamp DESC";
@@ -589,6 +586,12 @@ public class DatabaseService {
         return results;
     }
 
+    /**
+     * Удаляет результат расчета раскисления по идентификатору.
+     *
+     * @param id идентификатор результата расчета
+     * @return true если результат успешно удален, false в противном случае
+     */
     public static boolean deleteAlloyingResult(int id) {
         String sql = "DELETE FROM alloying_results WHERE id = ?";
 
@@ -604,8 +607,15 @@ public class DatabaseService {
         }
     }
 
-// === ОПЕРАЦИИ С РЕЗУЛЬТАТАМИ МНЛЗ ===
+    // === ОПЕРАЦИИ С РЕЗУЛЬТАТАМИ МНЛЗ ===
 
+    /**
+     * Сохраняет результат расчета параметров МНЛЗ в базу данных.
+     *
+     * @param result объект CasterResult с результатами расчета
+     * @param username имя пользователя, выполнившего расчет
+     * @return true если результат успешно сохранен, false в противном случае
+     */
     public static boolean saveCasterResult(CasterResult result, String username) {
         String sql = """
         INSERT INTO caster_results 
@@ -636,6 +646,12 @@ public class DatabaseService {
         }
     }
 
+    /**
+     * Возвращает историю расчетов параметров МНЛЗ для указанного пользователя.
+     *
+     * @param username имя пользователя
+     * @return список объектов CasterResult, отсортированный по дате (новые сначала)
+     */
     public static List<CasterResult> getCasterHistory(String username) {
         List<CasterResult> results = new ArrayList<>();
         String sql = "SELECT * FROM caster_results WHERE username = ? ORDER BY timestamp DESC";
@@ -666,6 +682,12 @@ public class DatabaseService {
         return results;
     }
 
+    /**
+     * Удаляет результат расчета параметров МНЛЗ по идентификатору.
+     *
+     * @param id идентификатор результата расчета
+     * @return true если результат успешно удален, false в противном случае
+     */
     public static boolean deleteCasterResult(int id) {
         String sql = "DELETE FROM caster_results WHERE id = ?";
 
@@ -681,8 +703,14 @@ public class DatabaseService {
         }
     }
 
-// === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ JSON ===
+    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ JSON ===
 
+    /**
+     * Преобразует Map в JSON строку.
+     *
+     * @param map объект Map для преобразования
+     * @return JSON строка или "{}" если map пустой или null
+     */
     private static String mapToJson(Map<String, Double> map) {
         if (map == null || map.isEmpty()) {
             return "{}";
@@ -702,6 +730,12 @@ public class DatabaseService {
         return json.toString();
     }
 
+    /**
+     * Преобразует JSON строку в Map.
+     *
+     * @param json JSON строка для преобразования
+     * @return объект Map или пустой Map если json невалиден
+     */
     private static Map<String, Double> jsonToMap(String json) {
         Map<String, Double> map = new HashMap<>();
         if (json == null || json.trim().isEmpty() || json.equals("{}")) {

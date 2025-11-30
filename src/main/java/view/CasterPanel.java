@@ -10,20 +10,105 @@ import java.awt.*;
 import java.text.DecimalFormat;
 import java.util.List;
 
+/**
+ * Панель для расчета параметров машины непрерывного литья заготовок (МНЛЗ) в приложении "Калькулятор металлурга".
+ * Предоставляет пользовательский интерфейс для ввода параметров разливки, выполнения расчетов и управления результатами.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Ввод технологических параметров разливки (масса, сечение, скорость)</li>
+ * <li>Выбор типа заготовки (сортовая, сляб) с автоматической настройкой параметров</li>
+ * <li>Выбор марки стали с автоматической корректировкой скорости разливки</li>
+ * <li>Выполнение расчета основных параметров МНЛЗ по формулам раздела 8</li>
+ * <li>Отображение результатов расчета с рекомендациями по типу МНЛЗ</li>
+ * <li>Сохранение результатов в базу данных</li>
+ * <li>Экспорт результатов в текстовые отчеты</li>
+ * <li>Просмотр рекомендованных скоростей разливки и математических формул</li>
+ * </ul>
+ *
+ * <p><b>Рассчитываемые параметры МНЛЗ:</b>
+ * <ul>
+ * <li>Число ручьев (формула 8.2)</li>
+ * <li>Металлургическая длина (формула 8.4)</li>
+ * <li>Радиус МНЛЗ (формула 8.7)</li>
+ * <li>Высота машины</li>
+ * <li>Рекомендации по типу МНЛЗ на основе радиуса</li>
+ * </ul>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see JPanel
+ * @see CasterResult
+ * @see CalculatorService
+ * @see DatabaseService
+ * @since 2024
+ */
 public class CasterPanel extends JPanel {
+    /**
+     * Поле для ввода массы плавки в тоннах.
+     */
     private JTextField weightField;
+
+    /**
+     * Выпадающий список для выбора марки стали.
+     */
     private JComboBox<String> steelGradeCombo;
+
+    /**
+     * Выпадающий список для выбора типа заготовки (сортовая, сляб).
+     */
     private JComboBox<String> sectionTypeCombo;
+
+    /**
+     * Поле для ввода ширины сечения заготовки в метрах.
+     */
     private JTextField widthField;
+
+    /**
+     * Поле для ввода толщины сечения заготовки в метрах.
+     */
     private JTextField thicknessField;
+
+    /**
+     * Поле для ввода скорости разливки в метрах в минуту.
+     */
     private JTextField speedField;
+
+    /**
+     * Поле для ввода цикла разливки в минутах.
+     */
     private JTextField cycleTimeField;
+
+    /**
+     * Область для отображения результатов расчета.
+     */
     private JTextArea resultArea;
+
+    /**
+     * Сервис для выполнения расчетов параметров МНЛЗ.
+     */
     private CalculatorService calculator;
+
+    /**
+     * Имя текущего пользователя для идентификации при сохранении результатов.
+     */
     private String currentUser;
+
+    /**
+     * Форматтер для форматирования числовых значений с двумя десятичными знаками.
+     */
     private DecimalFormat df = new DecimalFormat("#.##");
+
+    /**
+     * Последний результат расчета для повторного использования при сохранении и экспорте.
+     */
     private CasterResult lastResult;
 
+    /**
+     * Конструктор панели расчета параметров МНЛЗ.
+     *
+     * @param username имя пользователя для идентификации при сохранении результатов
+     */
     public CasterPanel(String username) {
         this.currentUser = username;
         this.calculator = new CalculatorService();
@@ -32,6 +117,10 @@ public class CasterPanel extends JPanel {
         setupEventListeners();
     }
 
+    /**
+     * Инициализирует пользовательский интерфейс панели.
+     * Создает и размещает все компоненты: панель ввода, область результатов и панель кнопок.
+     */
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
 
@@ -53,6 +142,11 @@ public class CasterPanel extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    /**
+     * Создает панель ввода данных с полями для параметров разливки.
+     *
+     * @return JPanel с организованными полями ввода в табличном формате
+     */
     private JPanel createInputPanel() {
         JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
         panel.setBorder(BorderFactory.createTitledBorder("Параметры машины непрерывного литья заготовок (МНЛЗ)"));
@@ -101,6 +195,11 @@ public class CasterPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Создает панель с кнопками управления для выполнения операций с расчетами.
+     *
+     * @return JPanel с кнопками: Расчет, Сохранение, Экспорт, Очистка, Формулы
+     */
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout());
 
@@ -127,6 +226,10 @@ public class CasterPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * Настраивает обработчики событий для выпадающих списков.
+     * Автоматически заполняет параметры при выборе типа заготовки и корректирует скорость при выборе марки стали.
+     */
     private void setupEventListeners() {
         sectionTypeCombo.addActionListener(e -> {
             String selectedType = (String) sectionTypeCombo.getSelectedItem();
@@ -153,6 +256,10 @@ public class CasterPanel extends JPanel {
         });
     }
 
+    /**
+     * Загружает список марок стали в выпадающий список.
+     * Добавляет основные марки стали и загружает дополнительные из базы данных.
+     */
     private void loadSteelGrades() {
         List<model.SteelGrade> grades = DatabaseService.getAllSteelGrades();
         steelGradeCombo.addItem("Ст3сп");
@@ -165,6 +272,21 @@ public class CasterPanel extends JPanel {
         }
     }
 
+    /**
+     * Выполняет расчет параметров МНЛЗ на основе введенных данных.
+     * Включает валидацию входных данных, выполнение расчета и отображение результатов.
+     *
+     * <p><b>Процесс расчета:</b>
+     * <ol>
+     * <li>Парсинг и валидация входных параметров</li>
+     * <li>Проверка положительности всех значений</li>
+     * <li>Выполнение расчета через CalculatorService</li>
+     * <li>Отображение результатов с рекомендациями</li>
+     * </ol>
+     *
+     * @throws NumberFormatException если введены некорректные числовые значения
+     * @throws IllegalArgumentException если данные не проходят валидацию
+     */
     private void calculate() {
         try {
             String steelGrade = (String) steelGradeCombo.getSelectedItem();
@@ -195,6 +317,12 @@ public class CasterPanel extends JPanel {
         }
     }
 
+    /**
+     * Отображает результаты расчета параметров МНЛЗ в текстовой области.
+     * Форматирует вывод с разделами: исходные данные, расчетные параметры, рекомендации.
+     *
+     * @param result объект с результатами расчета для отображения
+     */
     private void displayResults(CasterResult result) {
         StringBuilder sb = new StringBuilder();
         sb.append("РАСЧЕТ ОСНОВНЫХ ПАРАМЕТРОВ МНЛЗ\n");
@@ -203,6 +331,8 @@ public class CasterPanel extends JPanel {
         sb.append("ИСХОДНЫЕ ДАННЫЕ:\n");
         sb.append("----------------\n");
         sb.append(String.format("Марка стали: %s\n", result.getSteelGrade()));
+        sb.append(String.format("Плотность ρ: %.0f кг/м³\n", result.getSteelDensity()));
+        sb.append(String.format("Коэф. kз: %.0f\n", result.getMetallurgicalCoef()));
         sb.append(String.format("Масса плавки: %.1f т\n", result.getCastingWeight()));
         sb.append(String.format("Сечение заготовки: %.2f × %.2f м\n", result.getSectionWidth(), result.getSectionThickness()));
         sb.append(String.format("Скорость разливки: %.2f м/мин\n", result.getCastingSpeed()));
@@ -242,6 +372,10 @@ public class CasterPanel extends JPanel {
         resultArea.setText(sb.toString());
     }
 
+    /**
+     * Отображает диалоговое окно с рекомендованными скоростями разливки для различных типов заготовок.
+     * Содержит данные для сортовых заготовок и слябов различных размеров и марок стали.
+     */
     private void showRecommendedSpeeds() {
         String message = """
             РЕКОМЕНДОВАННЫЕ СКОРОСТИ РАЗЛИВКИ
@@ -279,6 +413,10 @@ public class CasterPanel extends JPanel {
         JOptionPane.showMessageDialog(this, scrollPane, "Рекомендованные скорости разливки", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Отображает диалоговое окно с математическими формулами расчета параметров МНЛЗ.
+     * Содержит основные формулы из раздела 8 учебного пособия.
+     */
     private void showFormulas() {
         String formulas = """
             ОСНОВНЫЕ ФОРМУЛЫ РАСЧЕТА МНЛЗ
@@ -320,6 +458,10 @@ public class CasterPanel extends JPanel {
         JOptionPane.showMessageDialog(this, scrollPane, "Формулы расчета МНЛЗ", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Сохраняет последний результат расчета в базу данных.
+     * Требует предварительного выполнения расчета.
+     */
     private void saveToDatabase() {
         if (lastResult == null) {
             JOptionPane.showMessageDialog(this,
@@ -340,6 +482,10 @@ public class CasterPanel extends JPanel {
         }
     }
 
+    /**
+     * Экспортирует последний результат расчета в текстовый файл формата PDF-like.
+     * Требует предварительного выполнения расчета.
+     */
     private void exportToPDF() {
         if (lastResult == null) {
             JOptionPane.showMessageDialog(this,
@@ -351,6 +497,9 @@ public class CasterPanel extends JPanel {
         PDFExportService.exportCasterToPDF(lastResult, currentUser);
     }
 
+    /**
+     * Очищает область результатов предыдущего расчета.
+     */
     private void clearResults() {
         resultArea.setText("");
     }

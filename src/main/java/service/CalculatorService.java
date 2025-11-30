@@ -6,10 +6,45 @@ import model.CasterResult;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Основной сервис для выполнения расчетов в приложении "Калькулятор металлурга".
+ * Содержит методы для расчета раскисления/легирования стали и параметров МНЛЗ.
+ *
+ * <p><b>Основные функции:</b>
+ * <ul>
+ * <li>Расчет расхода ферросплавов для раскисления и легирования стали</li>
+ * <li>Расчет параметров машины непрерывного литья заготовок (МНЛЗ)</li>
+ * <li>Учет угара химических элементов при легировании</li>
+ * <li>Определение свойств стали по марке для точных расчетов</li>
+ * </ul>
+ *
+ * <p><b>Используемые методики:</b>
+ * <ul>
+ * <li>Раздел 7 учебного пособия - раскисление и легирование</li>
+ * <li>Раздел 8 учебного пособия - расчет параметров МНЛЗ</li>
+ * <li>Таблица 7.1 - химический состав ферросплавов</li>
+ * <li>Таблица 8.1 - свойства сталей по маркам</li>
+ * </ul>
+ *
+ * @author Ваше имя
+ * @version 1.0
+ * @see AlloyingResult
+ * @see CasterResult
+ * @since 2024
+ */
 public class CalculatorService {
 
-    // Химический состав материалов из Таблицы 7.1
+    /**
+     * База данных химических составов ферросплавов и добавок.
+     * Данные соответствуют Таблице 7.1 учебного пособия.
+     * Формат: Map<Название материала, Map<Элемент, Содержание в %>>
+     */
     private static final Map<String, Map<String, Double>> MATERIALS = new HashMap<>();
+
+    /**
+     * Коэффициенты угара химических элементов при раскислении.
+     * Выражены в процентах от вводимого количества элемента.
+     */
     private static final Map<String, Double> BURN_LOSS = new HashMap<>();
 
     static {
@@ -18,6 +53,10 @@ public class CalculatorService {
         initBurnLoss();
     }
 
+    /**
+     * Инициализирует базу данных химических составов материалов.
+     * Данные взяты из Таблицы 7.1 учебного пособия.
+     */
     private static void initMaterials() {
         // Ферромарганец ФМн78
         Map<String, Double> fmn = new HashMap<>();
@@ -50,6 +89,10 @@ public class CalculatorService {
         MATERIALS.put("Науглероживатель", carbon);
     }
 
+    /**
+     * Инициализирует коэффициенты угара химических элементов.
+     * Значения основаны на практическом опыте металлургических производств.
+     */
     private static void initBurnLoss() {
         BURN_LOSS.put("Al", 40.0);
         BURN_LOSS.put("C", 40.0);
@@ -62,8 +105,27 @@ public class CalculatorService {
     }
 
     /**
-     * Расчет раскисления и легирования по формуле 7.1:
-     * M = [M_ж.ст. * (C_гот.ст. - C_исх) * 100] / [C_фер * (100 - K_уг)]
+     * Расчет раскисления и легирования стали по формуле 7.1 учебного пособия.
+     * Формула 7.1: M = [M_ж.ст. * (C_гот.ст. - C_исх) * 100] / [C_фер * (100 - K_уг)]
+     *
+     * <p><b>Процесс расчета:</b>
+     * <ol>
+     * <li>Расчет ферромарганца для корректировки содержания марганца</li>
+     * <li>Расчет ферросилиция для корректировки содержания кремния</li>
+     * <li>Расчет алюминия для раскисления</li>
+     * <li>Корректировка углерода при необходимости</li>
+     * <li>Расчет конечного химического состава</li>
+     * </ol>
+     *
+     * @param steelWeight масса жидкой стали в килограммах
+     * @param initialComp начальный химический состав стали (Элемент → Содержание в %)
+     * @param targetComp целевой химический состав стали (Элемент → Содержание в %)
+     * @param steelGrade марка стали для идентификации
+     * @return объект AlloyingResult с результатами расчета
+     *
+     * @throws IllegalArgumentException если параметры невалидны
+     *
+     * @see AlloyingResult
      */
     public AlloyingResult calculateAlloying(double steelWeight,
                                             Map<String, Double> initialComp,
@@ -118,6 +180,15 @@ public class CalculatorService {
         return result;
     }
 
+    /**
+     * Расчет массы материала по формуле 7.1 учебного пособия.
+     *
+     * @param steelWeight масса жидкой стали в кг
+     * @param elementNeeded необходимое количество элемента в %
+     * @param materialName название ферросплава
+     * @param element название химического элемента
+     * @return масса материала в килограммах
+     */
     private double calculateMaterialWeight(double steelWeight, double elementNeeded,
                                            String materialName, String element) {
         Map<String, Double> material = MATERIALS.get(materialName);
@@ -128,6 +199,14 @@ public class CalculatorService {
         return (steelWeight * elementNeeded * 100) / (elementInMaterial * (100 - burnLoss));
     }
 
+    /**
+     * Добавляет вклад материала в конечный химический состав стали.
+     *
+     * @param composition текущий химический состав
+     * @param materialName название добавляемого материала
+     * @param materialWeight масса материала в кг
+     * @param steelWeight масса стали в кг
+     */
     private void addMaterialContribution(Map<String, Double> composition,
                                          String materialName, double materialWeight,
                                          double steelWeight) {
@@ -147,7 +226,25 @@ public class CalculatorService {
     }
 
     /**
-     * Расчет параметров МНЛЗ по формулам из раздела 8
+     * Расчет параметров машины непрерывного литья заготовок (МНЛЗ) по разделу 8 учебного пособия.
+     *
+     * <p><b>Рассчитываемые параметры:</b>
+     * <ul>
+     * <li>Число ручьев (формула 8.2)</li>
+     * <li>Металлургическая длина (формула 8.5)</li>
+     * <li>Радиус МНЛЗ (формула 8.7)</li>
+     * <li>Высота МНЛЗ</li>
+     * </ul>
+     *
+     * @param steelGrade марка разливаемой стали
+     * @param castingWeight масса разливаемой стали в тоннах
+     * @param width ширина сечения заготовки в мм
+     * @param thickness толщина сечения заготовки в мм
+     * @param castingSpeed скорость разливки в м/мин
+     * @param cycleTime время цикла разливки в минутах
+     * @return объект CasterResult с расчетными параметрами МНЛЗ
+     *
+     * @see CasterResult
      */
     public CasterResult calculateCaster(String steelGrade, double castingWeight,
                                         double width, double thickness,
@@ -160,18 +257,20 @@ public class CalculatorService {
         result.setSectionThickness(thickness);
         result.setCastingSpeed(castingSpeed);
 
-        double steelDensity = 7300; // кг/м³
+        // МАРКА СТАЛИ ОПРЕДЕЛЯЕТ ρ И kз! [web:107][web:109]
+        SteelGradeProperties props = getSteelPropertiesByGrade(steelGrade);
+        result.setSteelDensity(props.density);
+        result.setMetallurgicalCoef(props.kz);
 
         // Формула 8.2: n = M / (B * b * ρ * v * τ_max)
         int streams = (int) Math.ceil((castingWeight * 1000) /
-                (width * thickness * steelDensity * castingSpeed * cycleTime));
+                (width * thickness * props.density * castingSpeed * cycleTime));
         result.setNumberOfStreams(streams);
 
         // Формула 8.4: L_л = k_з * b² * v
         // Формула 8.5: L_л = (k_з * b * M) / (0.9 * n * B * τ_р * ρ)
-        double kz = (width > 1.2) ? 340 : (width < 1.2 && thickness < 0.3) ? 290 : 240;
-        double metallurgicalLength = (kz * thickness * castingWeight * 1000) /
-                (0.9 * streams * width * cycleTime * steelDensity);
+        double metallurgicalLength = (props.kz * thickness * castingWeight * 1000) /
+                (0.9 * streams * width * cycleTime * props.density);
         result.setMetallurgicalLength(metallurgicalLength);
 
         // Формула 8.7: R = 2 * L_л / π
@@ -182,5 +281,54 @@ public class CalculatorService {
         result.setMachineHeight(result.getMachineRadius());
 
         return result;
+    }
+
+    /**
+     * Определяет свойства стали по марке согласно Таблице 8.1 учебного пособия.
+     *
+     * @param steelGrade марка стали
+     * @return объект SteelGradeProperties с плотностью и коэффициентом kз
+     */
+    private SteelGradeProperties getSteelPropertiesByGrade(String steelGrade) {
+        // Легированные/нержавейка (25Х2Н4МА, 12Х18Н10Т, 40ХГНМ...)
+        if (steelGrade.contains("Х") || steelGrade.contains("Н") ||
+                steelGrade.contains("4543-71") || steelGrade.contains("08Х")) {
+            return new SteelGradeProperties(7200, 290);  // ρ=7200, kз=290 [web:107]
+        }
+        // Высокоуглеродистые (70, У8...)
+        else if (steelGrade.contains("70") || steelGrade.contains("У") ||
+                Double.parseDouble(steelGrade.replaceAll("[^0-9]", "")) > 50) {
+            return new SteelGradeProperties(7400, 200);  // ρ=7400, kз=200
+        }
+        // Марганцево-кремнистые (35ГС, 25ХГСА...)
+        else if (steelGrade.contains("ГС") || steelGrade.contains("ХГ")) {
+            return new SteelGradeProperties(7250, 260);
+        }
+        // Обычные углеродистые (Ст3сп, 35, 45...)
+        else {
+            return new SteelGradeProperties(7300, 240);  // стандарт [web:109]
+        }
+    }
+
+    /**
+     * Вспомогательный класс для хранения свойств стали.
+     * Используется для передачи плотности и коэффициента металлургической длины.
+     */
+    private static class SteelGradeProperties {
+        /** Плотность стали в кг/м³ */
+        final double density;
+        /** Коэффициент металлургической длины */
+        final double kz;
+
+        /**
+         * Конструктор для создания объекта свойств стали.
+         *
+         * @param density плотность стали в кг/м³
+         * @param kz коэффициент металлургической длины
+         */
+        SteelGradeProperties(double density, double kz) {
+            this.density = density;
+            this.kz = kz;
+        }
     }
 }
