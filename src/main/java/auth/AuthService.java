@@ -122,7 +122,6 @@ public class AuthService {
      *         <li>Имя пользователя или пароль пустые</li>
      *         </ul>
      *
-     * @throws IllegalArgumentException если username или plainPassword равны null
      *
      * @example
      * <pre>

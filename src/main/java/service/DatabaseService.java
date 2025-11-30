@@ -66,8 +66,8 @@ public class DatabaseService {
      * <li>Установка флага инициализации</li>
      * </ol>
      *
-     * @throws SQLException если произошла ошибка при работе с базой данных
      */
+
     public static void initialize() {
         if (initialized) {
             return;
