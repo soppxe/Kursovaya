@@ -376,7 +376,17 @@ public class ReportsPanel extends JPanel {
         }
 
         if (!searchText.isEmpty()) {
-            searchFilter = RowFilter.regexFilter("(?i)" + searchText, 2); // Поиск в марке стали
+            // Используем более гибкий фильтр для поиска по подстроке
+            searchFilter = new RowFilter<DefaultTableModel, Object>() {
+                @Override
+                public boolean include(Entry<? extends DefaultTableModel, ? extends Object> entry) {
+                    String steelGrade = entry.getStringValue(2); // Колонка 2 - Марка стали
+                    if (steelGrade == null) return false;
+
+                    // Приводим к нижнему регистру для регистронезависимого поиска
+                    return steelGrade.toLowerCase().contains(searchText.toLowerCase());
+                }
+            };
         }
 
         if (typeFilter != null && searchFilter != null) {

@@ -111,7 +111,7 @@ public class DatabaseService {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 encrypted_password TEXT NOT NULL,
-                email TEXT,
+                email TEXT UNIQUE NOT NULL,,
                 created_date DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """);
